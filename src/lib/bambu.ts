@@ -302,6 +302,8 @@ export class BambuClient {
       deviceId: params.deviceId,
       profileId: params.profileId,
       plateIndex: params.plateIndex ?? 1,
+      mode: "cloud_file",
+      repetitions: 1,
     });
   }
 
