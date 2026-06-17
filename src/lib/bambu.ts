@@ -281,6 +281,30 @@ export class BambuClient {
     );
   }
 
+  // ── Print control ────────────────────────────────────────────────────────
+
+  /**
+   * POST /v1/user-service/my/task — start a print job from a saved project profile.
+   *
+   * Prerequisites:
+   *   1. The .3mf must already be sliced and uploaded to Bambu Cloud as a project.
+   *   2. Get the profileId from get_project → profiles[0].profile_id.
+   *   3. Get the deviceId from list_printers → devices[].dev_id.
+   *
+   * plateIndex defaults to 1 (first plate). Most single-model prints only have one plate.
+   */
+  startPrint(params: {
+    deviceId: string;
+    profileId: number;
+    plateIndex?: number;
+  }) {
+    return this.request<unknown>("POST", "/v1/user-service/my/task", undefined, {
+      deviceId: params.deviceId,
+      profileId: params.profileId,
+      plateIndex: params.plateIndex ?? 1,
+    });
+  }
+
   // ── Misc ────────────────────────────────────────────────────────────────
 
   /** GET /v1/design-user-service/my/preference — includes numeric `uid` (for MQTT). */

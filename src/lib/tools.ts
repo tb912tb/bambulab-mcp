@@ -65,17 +65,17 @@ export const TOOLS: ToolDefinition[] = [
   {
     name: "list_projects",
     description:
-      "List projects owned by the user. A project is a higher-level container than a task — it bundles the sliced plates, filaments, and downloads for a model.",
+      "List projects owned by the user. A project is a higher-level container than a task — it bundles the sliced plates, filaments, and downloads for a model. Use this to find a project_id before calling get_project.",
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "get_project",
     description:
-      "Get full project details including `profiles[].context.plates[].filaments[]` — the only place to get per-filament color, material type, grams, and meters used.",
+      "Get full project details including profiles[].profile_id (needed to start a print) and profiles[].context.plates[].filaments[] (per-filament color, material, grams, meters used).",
     inputSchema: {
       type: "object",
       properties: {
-        id: { type: "string", description: "Project id" },
+        id: { type: "string", description: "Project id (from list_projects)" },
       },
       required: ["id"],
     },
@@ -87,6 +87,31 @@ export const TOOLS: ToolDefinition[] = [
     description:
       "Get the current live status (task_id, progress %, temperatures, thumbnail) for every printer bound to this account. Cloud-side snapshot — use LAN MQTT for continuous updates.",
     inputSchema: { type: "object", properties: {} },
+  },
+
+  // ── Print control ─────────────────────────────────────────────────────────
+  {
+    name: "start_print",
+    description:
+      "Start a print job on a Bambu Lab printer using a project already sliced and saved to Bambu Cloud. Workflow: (1) call list_projects to find the project by name, (2) call get_project with its id to get the profileId from profiles[0].profile_id, (3) call this tool with the printer's deviceId and that profileId. The printer must be online.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        deviceId: {
+          type: "string",
+          description: "Printer serial number — dev_id from list_printers (e.g. '03919D4C1200374')",
+        },
+        profileId: {
+          type: "number",
+          description: "Profile ID from get_project → profiles[0].profile_id",
+        },
+        plateIndex: {
+          type: "number",
+          description: "Which plate to print (default 1 — most single-model prints only have one plate)",
+        },
+      },
+      required: ["deviceId", "profileId"],
+    },
   },
 
   // ── Account / misc ────────────────────────────────────────────────────────
@@ -145,6 +170,13 @@ export async function callTool(
 
     case "get_live_status":
       return client.getLiveStatus();
+
+    case "start_print":
+      return client.startPrint({
+        deviceId: input.deviceId as string,
+        profileId: input.profileId as number,
+        plateIndex: input.plateIndex as number | undefined,
+      });
 
     case "get_user_preference":
       return client.getUserPreference();
